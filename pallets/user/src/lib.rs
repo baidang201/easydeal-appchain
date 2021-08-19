@@ -31,6 +31,7 @@ use frame_support::{
 			storage::{MutateStorageError, StorageValueRef, StorageRetrievalError}
 		}
 	}, 
+  transactional
 };
 
 /// Edit this file to define custom logic or remove it if it is not needed.
@@ -142,6 +143,10 @@ pub mod pallet {
 	#[pallet::getter(fn email_api)]
 	pub type EmailApi<T> = StorageValue<_, Vec<u8>>;
 
+  #[pallet::storage]
+	#[pallet::getter(fn cur_block_num)]
+	pub(super) type CurBlockNum<T: Config> = StorageValue<_, T::BlockNumber>;
+
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
@@ -219,6 +224,11 @@ pub mod pallet {
 				log::info!("email api not set");
 			}
 			
+		}
+
+    fn on_finalize(now: T::BlockNumber) {
+			Self::on_finalize(now)
+				.unwrap_or_else(|_| log::debug!("Unexpected error occurred on finalize."));
 		}
 
 	}
@@ -522,6 +532,12 @@ pub mod pallet {
 				.propagate(true)
 				.build()
 		
+		}
+
+    #[transactional]
+		pub fn on_finalize(now: T::BlockNumber) -> DispatchResult {
+			CurBlockNum::<T>::put(now);
+			Ok(())
 		}
 	
 	}
